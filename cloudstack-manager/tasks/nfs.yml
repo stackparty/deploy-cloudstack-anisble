@@ -1,0 +1,57 @@
+# This playbook setup nfs (http://nfs.sourceforge.net/) capability.
+#
+# Copyright (c) 2013-2014 Fabian Affolter <fabian@affolter-engineering.ch>
+#
+# Licensed under CC BY 3.0. All rights reserved.
+#
+---
+- name: install nfs package
+  yum: pkg={{ item }}
+       state=present 
+  with_items:
+    - nfs-utils
+
+- name: create a directory to share
+  file: path=/export/primary
+        mode=0755
+        state=directory
+        
+- name: create a directory to share
+  file: path=/export/secondary
+        mode=0755
+        state=directory
+
+#  template: src=files/default.j2
+#- name: put a dummy in the share
+#            dest=/opt/nfs/info.txt
+#            mode=0644
+
+- name: add an export
+  lineinfile: dest=/etc/exports
+              regexp=''
+              insertafter=EOF
+              line='/export/primary *(rw,async,no_root_squash)'
+              
+- name: add an export
+  lineinfile: dest=/etc/exports
+              regexp=''
+              insertafter=EOF
+              line='/export/secondary *(rw,async,no_root_squash)'
+              
+- name: Reload exports
+  command: exportfs -a
+  
+- name: Machine | Disable firewall (fixme)
+    service name=iptables 
+    state=stopped 
+    enabled=false
+
+- name: start rpcbind
+  service: name=rpcbind
+           state=running
+           enabled=yes
+
+- name: start nfs
+  service: name=nfs
+           state=running
+           enabled=yes
